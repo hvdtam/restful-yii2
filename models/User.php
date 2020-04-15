@@ -10,6 +10,35 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
     public $authKey;
     public $accessToken;
 
+    const RATE_LIMIT_NUMBER = 5;
+    const RATE_LIMIT_RESET = 60;
+    public function getRateLimit($request, $action)
+{
+return [self::RATE_LIMIT_NUMBER,
+self::RATE_LIMIT_RESET];
+}
+    public function loadAllowance($request, $action)
+    {
+        $userAllowance = UserAllowance::
+        findOne($this->id);
+        return $userAllowance ?
+            [$userAllowance->allowed_number_requests,
+                $userAllowance->last_check_time] :
+            $this->getRateLimit($request, $action);
+    }
+    public function saveAllowance($request, $action,
+                                  $allowance, $timestamp)
+    {
+        $userAllowance = ($allowanceModel =
+            UserAllowance::findOne($this->id)) ?
+            $allowanceModel : new UserAllowance();
+        $userAllowance->user_id = $this->id;
+        $userAllowance->last_check_time = $timestamp;
+        $userAllowance->allowed_number_requests =
+            $allowance;
+        $userAllowance->save();
+    }
+    // other User model methods
     private static $users = [
         '100' => [
             'id' => '100',
